@@ -1,5 +1,11 @@
+import HomeHero from "../components/HomeHero";
+import HomeStats from "../components/HomeStats";
+
 const Home = () => {
   return (
+    <>
+    <HomeHero/>
+    <HomeStats/>
     <div className="container py-5">
       <div className="text-center">
         <h1 className="fw-bold text-primary">
@@ -10,6 +16,7 @@ const Home = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 
