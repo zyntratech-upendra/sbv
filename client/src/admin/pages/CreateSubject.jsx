@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { subjectAPI } from "../../utils/api";
 import { adminAPI } from "../../utils/api";
-import { Plus, Trash2, Edit2, AlertCircle, BookOpen } from "lucide-react";
-import AdminSidebar from "../components/AdminSidebar";
-import AdminTopbar from "../components/AdminTopbar";
+import { Plus, Trash2, AlertCircle, BookOpen } from "lucide-react";
+import AdminLayout from "../AdminLayout";
 
 export default function CreateSubject() {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ export default function CreateSubject() {
     classId: "",
     selectedSubjects: [],
   });
-  const [allAllocations, setAllAllocations] = useState([]);
   const [batchClassesForAllocation, setBatchClassesForAllocation] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -174,298 +172,520 @@ export default function CreateSubject() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminTopbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            {/* Tabs */}
-            <div className="mb-8 flex gap-4 border-b">
-              <button
-                onClick={() => setView("create")}
-                className={`px-4 py-2 font-semibold transition ${
-                  view === "create"
-                    ? "border-b-2 border-purple-500 text-purple-600"
-                    : "text-gray-600"
-                }`}
-              >
-                Create Subject
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={`px-4 py-2 font-semibold transition ${
-                  view === "list"
-                    ? "border-b-2 border-purple-500 text-purple-600"
-                    : "text-gray-600"
-                }`}
-              >
-                View Subjects
-              </button>
-              <button
-                onClick={() => setView("allocate")}
-                className={`px-4 py-2 font-semibold transition ${
-                  view === "allocate"
-                    ? "border-b-2 border-purple-500 text-purple-600"
-                    : "text-gray-600"
-                }`}
-              >
-                Allocate to Classes
-              </button>
+    <AdminLayout>
+      {/* ================= HEADER ================= */}
+      <div className="mb-4">
+        <h2 className="dashboard-title flex items-center gap-2">
+          <BookOpen size={24} />
+          Subjects
+        </h2>
+        <p className="dashboard-subtitle">Manage subjects and class allocations</p>
+      </div>
+
+      {/* ================= TABS ================= */}
+      <div className="tabs-wrapper">
+        {["create", "list", "allocate"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setView(t)}
+            className={`tab-btn ${view === t ? "active" : ""}`}
+          >
+            {t === "create" ? "Create Subject" : t === "list" ? "View Subjects" : "Allocate to Classes"}
+          </button>
+        ))}
+      </div>
+
+      {/* ================= CREATE SUBJECT FORM ================= */}
+      {view === "create" && (
+        <div className="panel fade-in">
+          {success && (
+            <div className="alert success">
+              ✓ Subject created successfully!
+            </div>
+          )}
+
+          {error && (
+            <div className="alert error">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Subject Name *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Mathematics"
+                className="form-control custom-input"
+                required
+              />
             </div>
 
-            {view === "create" ? (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <BookOpen size={32} />
-                    Create Subject
-                  </h1>
-                  <p className="text-gray-600 mt-2">Add a new subject to the system</p>
-                </div>
+            <div className="col-md-6">
+              <label className="form-label">Subject Code *</label>
+              <input
+                type="text"
+                name="code"
+                value={formData.code}
+                onChange={handleChange}
+                placeholder="MATH"
+                className="form-control custom-input"
+                required
+              />
+            </div>
 
-                <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
-                  {success && (
-                    <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                      ✓ Subject created successfully!
-                    </div>
-                  )}
+            <div className="col-12">
+              <label className="form-label">Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Subject description"
+                rows="3"
+                className="form-control custom-input"
+              />
+            </div>
 
-                  {error && (
-                    <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
+            <div className="col-12 d-flex gap-3 mt-3">
+              <button
+                className="btn action-btn primary flex-fill"
+                disabled={loading}
+              >
+                {loading ? "Creating..." : "Create Subject"}
+              </button>
+              <button
+                type="button"
+                className="btn action-btn outline-secondary flex-fill"
+                onClick={() => navigate("/admin/dashboard")}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* ================= SUBJECTS LIST ================= */}
+      {view === "list" && (
+        <div className="panel fade-in">
+          {success && (
+            <div className="alert success mb-4">
+              ✓ Operation successful!
+            </div>
+          )}
+
+          {error && (
+            <div className="alert error mb-4">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
+
+          {subjects.length > 0 ? (
+            <div className="row g-4">
+              {subjects.map((subject) => (
+                <div key={subject._id} className="col-lg-4 col-md-6">
+                  <div className="subject-card">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject Name *
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          placeholder="Mathematics"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          required
-                        />
+                        <h5 className="subject-name">{subject.name}</h5>
+                        <p className="subject-code mb-2">Code: {subject.code}</p>
+                        {subject.description && (
+                          <p className="subject-desc">{subject.description}</p>
+                        )}
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject Code *
-                        </label>
-                        <input
-                          type="text"
-                          name="code"
-                          value={formData.code}
-                          onChange={handleChange}
-                          placeholder="MATH"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="Subject description"
-                        rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                      />
-                    </div>
-
-                    <div className="flex gap-4">
                       <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleDeleteSubject(subject._id)}
+                        className="btn btn-sm btn-outline-danger"
+                        title="Delete Subject"
                       >
-                        {loading ? "Creating..." : "Create Subject"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate("/admin/dashboard")}
-                        className="flex-1 bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-400 transition"
-                      >
-                        Cancel
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                  </form>
-                </div>
-              </>
-            ) : view === "list" ? (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <BookOpen size={32} />
-                    All Subjects
-                  </h1>
-                  <p className="text-gray-600 mt-2">View and manage subjects</p>
-                </div>
-
-                {success && (
-                  <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                    ✓ Operation successful!
                   </div>
-                )}
-
-                <div className="grid gap-4">
-                  {subjects.length > 0 ? (
-                    subjects.map((subject) => (
-                      <div
-                        key={subject._id}
-                        className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-xl font-bold text-gray-800">
-                              {subject.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Code: {subject.code}
-                            </p>
-                            {subject.description && (
-                              <p className="text-sm text-gray-600 mt-2">
-                                {subject.description}
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleDeleteSubject(subject._id)}
-                            className="text-red-500 hover:text-red-700 transition"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-                      <p>No subjects found</p>
-                    </div>
-                  )}
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <BookOpen size={32} />
-                    Allocate Subjects to Classes
-                  </h1>
-                  <p className="text-gray-600 mt-2">Assign subjects to specific classes in a batch</p>
-                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted mb-0">No subjects found. Create one to get started!</p>
+            </div>
+          )}
+        </div>
+      )}
 
-                <div className="max-w-4xl bg-white rounded-lg shadow-lg p-8">
-                  {success && (
-                    <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                      ✓ Subjects allocated successfully!
-                    </div>
-                  )}
+      {/* ================= ALLOCATE SUBJECTS ================= */}
+      {view === "allocate" && (
+        <div className="panel fade-in">
+          {success && (
+            <div className="alert success">
+              ✓ Subjects allocated successfully!
+            </div>
+          )}
 
-                  {error && (
-                    <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
+          {error && (
+            <div className="alert error">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
 
-                  <form onSubmit={handleAllocateSubjects} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleAllocateSubjects} className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Select Batch *</label>
+              <select
+                value={allocationData.batchId}
+                onChange={handleBatchChangeForAllocation}
+                className="form-select custom-input"
+                required
+              >
+                <option value="">Choose a batch</option>
+                {batches.map((batch) => (
+                  <option key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label">Select Class *</label>
+              <select
+                value={allocationData.classId}
+                onChange={(e) =>
+                  setAllocationData((prev) => ({
+                    ...prev,
+                    classId: e.target.value,
+                  }))
+                }
+                className="form-select custom-input"
+                required
+                disabled={!allocationData.batchId}
+              >
+                <option value="">Choose a class</option>
+                {batchClassesForAllocation.map((cls) => (
+                  <option key={cls._id} value={cls._id}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-12">
+              <label className="form-label mb-3">Select Subjects *</label>
+              <div className="row g-3">
+                {subjects.map((subject) => (
+                  <div key={subject._id} className="col-md-6 col-lg-4">
+                    <label className="subject-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={allocationData.selectedSubjects.includes(subject._id)}
+                        onChange={() => handleSubjectToggle(subject._id)}
+                        className="form-check-input"
+                      />
+                      <span className="checkmark"></span>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Batch *
-                        </label>
-                        <select
-                          value={allocationData.batchId}
-                          onChange={handleBatchChangeForAllocation}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          required
-                        >
-                          <option value="">Choose a batch</option>
-                          {batches.map((batch) => (
-                            <option key={batch._id} value={batch._id}>
-                              {batch.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="subject-checkbox-name">{subject.name}</div>
+                        <small className="text-muted">{subject.code}</small>
                       </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Class *
-                        </label>
-                        <select
-                          value={allocationData.classId}
-                          onChange={(e) =>
-                            setAllocationData((prev) => ({
-                              ...prev,
-                              classId: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          required
-                          disabled={!allocationData.batchId}
-                        >
-                          <option value="">Choose a class</option>
-                          {batchClassesForAllocation.map((cls) => (
-                            <option key={cls._id} value={cls._id}>
-                              {cls.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
+            <div className="col-12 d-flex gap-3 mt-4">
+              <button
+                className="btn action-btn primary flex-fill"
+                disabled={loading}
+              >
+                {loading ? "Allocating..." : "Allocate Subjects"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
-                        Select Subjects *
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {subjects.map((subject) => (
-                          <label key={subject._id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={allocationData.selectedSubjects.includes(subject._id)}
-                              onChange={() => handleSubjectToggle(subject._id)}
-                              className="w-4 h-4 rounded"
-                            />
-                            <div>
-                              <p className="font-medium text-gray-800">{subject.name}</p>
-                              <p className="text-sm text-gray-600">{subject.code}</p>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+      {/* ================= INTERNAL CSS ================= */}
+      <style>{`
+        * {
+          font-family: 'Inter', sans-serif;
+        }
 
-                    <div className="flex gap-4">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {loading ? "Allocating..." : "Allocate Subjects"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </>
-            )}
-          </div>
-        </main>
-      </div>
-    </div>
+        .dashboard-title {
+          font-weight: 700;
+          color: #535434;
+          font-size: 2rem;
+        }
+
+        .dashboard-subtitle {
+          color: #777;
+          font-size: 0.95rem;
+          margin: 0;
+        }
+
+        .tabs-wrapper {
+          display: flex;
+          gap: 1.5rem;
+          margin-bottom: 1.5rem;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .tab-btn {
+          background: none;
+          border: none;
+          padding: 0.6rem 0;
+          font-weight: 600;
+          color: #777;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: color 0.2s;
+          white-space: nowrap;
+        }
+
+        .tab-btn.active {
+          color: #535434;
+          border-bottom: 3px solid #535434;
+        }
+
+        .tab-btn:hover {
+          color: #535434;
+        }
+
+        .panel {
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+        }
+
+        .custom-input, .form-select {
+          border-radius: 12px;
+          border: 1px solid #ddd;
+          transition: all 0.2s;
+        }
+
+        .custom-input:focus, .form-select:focus {
+          border-color: #535434;
+          box-shadow: 0 0 0 3px rgba(83, 84, 52, 0.1);
+        }
+
+        .alert {
+          padding: 0.875rem 1.25rem;
+          border-radius: 12px;
+          margin-bottom: 1.25rem;
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          font-weight: 500;
+        }
+
+        .alert.success {
+          background: #e6e6d1;
+          color: #535434;
+          border: 1px solid #d4d4a8;
+        }
+
+        .alert.error {
+          background: #fdecea;
+          color: #b00020;
+          border: 1px solid #f5c2c7;
+        }
+
+        .action-btn {
+          border-radius: 14px;
+          font-weight: 500;
+          padding: 0.75rem 1rem;
+          font-size: 0.95rem;
+          transition: all 0.2s;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .action-btn.primary {
+          background: #535434;
+          color: #fff;
+        }
+
+        .action-btn.primary:hover:not(:disabled) {
+          background: #45462e;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(83, 84, 52, 0.3);
+        }
+
+        .action-btn.outline-secondary {
+          border: 1px solid #6a6b48;
+          color: #6a6b48;
+          background: transparent;
+        }
+
+        .action-btn.outline-secondary:hover {
+          background: #6a6b48;
+          color: white;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(106, 107, 72, 0.3);
+        }
+
+        .btn-outline-danger {
+          color: #dc3545 !important;
+          border-color: #dc3545 !important;
+        }
+
+        .btn-outline-danger:hover {
+          background-color: #dc3545 !important;
+          color: white !important;
+        }
+
+        .subject-card {
+          background: white;
+          border-radius: 12px;
+          padding: 1.75rem;
+          border: 1px solid #e9ecef;
+          transition: all 0.2s;
+          height: 100%;
+        }
+
+        .subject-card:hover {
+          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          transform: translateY(-2px);
+        }
+
+        .subject-name {
+          color: #535434;
+          font-weight: 600;
+          margin: 0 0 0.25rem 0;
+          font-size: 1.25rem;
+        }
+
+        .subject-code {
+          color: #666;
+          font-size: 0.875rem;
+          margin: 0;
+        }
+
+        .subject-desc {
+          color: #777;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .subject-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem;
+          border: 2px solid #e9ecef;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: white;
+        }
+
+        .subject-checkbox:hover {
+          border-color: #535434;
+          box-shadow: 0 4px 12px rgba(83, 84, 52, 0.1);
+        }
+
+        .subject-checkbox input:checked + .checkmark {
+          background: #535434;
+          border-color: #535434;
+        }
+
+        .subject-checkbox input:checked + .checkmark::after {
+          display: block;
+        }
+
+        .subject-checkbox-name {
+          font-weight: 500;
+          color: #535434;
+          margin: 0;
+        }
+
+        .form-check-input {
+          position: absolute;
+          opacity: 0;
+        }
+
+        .checkmark {
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+          border: 2px solid #ddd;
+          position: relative;
+          flex-shrink: 0;
+          transition: all 0.2s;
+        }
+
+        .checkmark::after {
+          content: '';
+          position: absolute;
+          display: none;
+          left: 6px;
+          top: 2px;
+          width: 5px;
+          height: 10px;
+          border: solid #fff;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .fade-in {
+          animation: fadeIn 0.35s ease;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-title {
+            font-size: 1.5rem;
+          }
+          
+          .panel {
+            padding: 1.5rem;
+          }
+          
+          .tabs-wrapper {
+            gap: 1rem;
+          }
+          
+          .tab-btn {
+            font-size: 0.9rem;
+            flex: 1;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .panel {
+            padding: 1.25rem;
+          }
+          
+          .tabs-wrapper {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .tab-btn {
+            text-align: left;
+            padding-left: 0;
+          }
+        }
+      `}</style>
+    </AdminLayout>
   );
 }

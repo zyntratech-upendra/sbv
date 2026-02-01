@@ -1,28 +1,28 @@
-// AdminLayout.jsx
+// TeacherLayout.jsx
 import { useState } from "react";
-import AdminSidebar from "./components/AdminSidebar";
-import AdminTopbar from "./components/AdminTopbar";
+import TeacherSidebar from "./components/TeacherSidebar";
+import TeacherTopbar from "./components/TeacherTopbar";
 
-const AdminLayout = ({ children }) => {
+const TeacherLayout = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="admin-layout">
-      <AdminSidebar
+    <div className="teacher-layout">
+      <TeacherSidebar
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
-      <div className={`admin-main ${sidebarCollapsed ? "collapsed" : ""}`}>
-        <AdminTopbar
+      <div className={`teacher-main ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <TeacherTopbar
           onMenuClick={() => setMobileSidebarOpen(true)}
           onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
 
-        <main className="admin-content">
+        <main className="teacher-content">
           {children}
         </main>
       </div>
@@ -32,13 +32,13 @@ const AdminLayout = ({ children }) => {
           font-family: 'Inter', sans-serif;
         }
 
-        .admin-layout {
+        .teacher-layout {
           height: 100vh;
           overflow: hidden;
-          background: #f2f2e4;
+          background: #f4f7fb;
         }
 
-        .admin-main {
+        .teacher-main {
           margin-left: 260px;
           height: 100vh;
           display: flex;
@@ -46,20 +46,20 @@ const AdminLayout = ({ children }) => {
           transition: margin-left 0.3s ease;
         }
 
-        .admin-main.collapsed {
+        .teacher-main.collapsed {
           margin-left: 80px;
         }
 
-        .admin-content {
+        .teacher-content {
           flex: 1;
           overflow-y: auto;
           padding: 1.5rem;
-          background: #f2f2e4;
+          background: #f4f7fb;
         }
 
         @media (max-width: 768px) {
-          .admin-main,
-          .admin-main.collapsed {
+          .teacher-main,
+          .teacher-main.collapsed {
             margin-left: 0;
           }
         }
@@ -68,4 +68,4 @@ const AdminLayout = ({ children }) => {
   );
 };
 
-export default AdminLayout;
+export default TeacherLayout;

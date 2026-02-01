@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminAPI } from "../../utils/api";
 import { Calendar, AlertCircle, Plus, Trash2, Edit2 } from "lucide-react";
-import AdminSidebar from "../components/AdminSidebar";
-import AdminTopbar from "../components/AdminTopbar";
+import AdminLayout from "../AdminLayout";
 
 export default function CreateBatch() {
   const navigate = useNavigate();
@@ -191,422 +190,589 @@ export default function CreateBatch() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminTopbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            {/* Tabs */}
-            <div className="mb-8 flex gap-4 border-b">
-              <button
-                onClick={() => setView("create")}
-                className={`px-4 py-2 font-semibold transition ${
-                  view === "create"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-600"
-                }`}
+    <AdminLayout>
+      {/* ================= HEADER ================= */}
+      <div className="mb-4">
+        <h2 className="dashboard-title flex items-center gap-2">
+          <Calendar size={24} />
+          Batches
+        </h2>
+        <p className="dashboard-subtitle">Manage academic batches and classes</p>
+      </div>
+
+      {/* ================= TABS ================= */}
+      <div className="tabs-wrapper">
+        {["create", "list"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setView(t)}
+            className={`tab-btn ${view === t ? "active" : ""}`}
+          >
+            {t === "create" ? "Create Batch" : "View Batches"}
+          </button>
+        ))}
+      </div>
+
+      {/* ================= CREATE/EDIT FORM ================= */}
+      {(view === "create" || view === "edit") && (
+        <div className="panel fade-in">
+          {success && (
+            <div className="alert success">
+              ✓ {view === "create" ? "Batch created" : "Batch updated"} successfully!
+            </div>
+          )}
+
+          {error && (
+            <div className="alert error">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="row g-3">
+            {/* Academic Year & Batch Name */}
+            <div className="col-md-6">
+              <label className="form-label">Academic Year *</label>
+              <select
+                onChange={(e) => handleYearChange(e.target.value)}
+                className="form-select custom-input"
+                required
               >
-                Create New Batch
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={`px-4 py-2 font-semibold transition ${
-                  view === "list"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-600"
-                }`}
-              >
-                View & Manage Batches
-              </button>
+                <option value="">Select Academic Year</option>
+                {YEAR_OPTIONS.map((year) => (
+                  <option key={year.value} value={year.value}>
+                    {year.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Create/Edit View */}
-            {view === "create" || view === "edit" ? (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <Calendar size={32} />
-                    {view === "create" ? "Create New Batch" : "Edit Batch"}
-                  </h1>
-                  <p className="text-gray-600 mt-2">
-                    {view === "create"
-                      ? "Set up a new batch for the academic year"
-                      : "Update batch information"}
-                  </p>
+            <div className="col-md-6">
+              <label className="form-label">Batch Name *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="2024-2025"
+                className="form-control custom-input"
+                required
+              />
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label">Start Date *</label>
+              <input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                className="form-control custom-input"
+                required
+              />
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label">End Date *</label>
+              <input
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                className="form-control custom-input"
+                required
+              />
+            </div>
+
+            <div className="col-12">
+              <label className="form-label">Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Batch description"
+                rows="3"
+                className="form-control custom-input"
+              />
+            </div>
+
+            {/* ================= CLASSES SECTION ================= */}
+            <div className="col-12">
+              <h4 className="section-title mb-3">Classes & Sections</h4>
+              
+              {/* Add Class Form */}
+              <div className="add-class-panel mb-4">
+                <div className="row g-3">
+                  <div className="col-md-4 col-sm-12">
+                    <label className="form-label">Select Class *</label>
+                    <select
+                      value={newClassItem.classId}
+                      onChange={(e) =>
+                        setNewClassItem({
+                          ...newClassItem,
+                          classId: e.target.value,
+                        })
+                      }
+                      className="form-select custom-input"
+                    >
+                      <option value="">Choose a class</option>
+                      {PREDEFINED_CLASSES.map((cls) => (
+                        <option key={cls._id} value={cls._id}>
+                          {cls.name} ({cls.classCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-3 col-sm-6">
+                    <label className="form-label">Sections *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={newClassItem.numberOfSections}
+                      onChange={(e) =>
+                        setNewClassItem({
+                          ...newClassItem,
+                          numberOfSections: parseInt(e.target.value),
+                        })
+                      }
+                      className="form-control custom-input"
+                    />
+                  </div>
+
+                  <div className="col-md-3 col-sm-6">
+                    <label className="form-label">Capacity/Section *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newClassItem.capacity}
+                      onChange={(e) =>
+                        setNewClassItem({
+                          ...newClassItem,
+                          capacity: parseInt(e.target.value),
+                        })
+                      }
+                      placeholder="50"
+                      className="form-control custom-input"
+                    />
+                  </div>
+
+                  <div className="col-md-2 col-sm-12 d-flex align-items-end">
+                    <button
+                      type="button"
+                      onClick={handleAddClass}
+                      className="btn action-btn primary w-100"
+                    >
+                      <Plus size={16} className="me-1" />
+                      Add
+                    </button>
+                  </div>
                 </div>
+              </div>
 
-                <div className="max-w-4xl bg-white rounded-lg shadow-lg p-8">
-                  {success && (
-                    <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                      ✓ {view === "create" ? "Batch created" : "Batch updated"}{" "}
-                      successfully!
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Batch Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Academic Year *
-                        </label>
-                        <select
-                          onChange={(e) => handleYearChange(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
-                        >
-                          <option value="">Select Academic Year</option>
-                          {YEAR_OPTIONS.map((year) => (
-                            <option key={year.value} value={year.value}>
-                              {year.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Batch Name *
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          placeholder="2024-2025"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date *
-                        </label>
-                        <input
-                          type="date"
-                          name="startDate"
-                          value={formData.startDate}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          End Date *
-                        </label>
-                        <input
-                          type="date"
-                          name="endDate"
-                          value={formData.endDate}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="Batch description"
-                        rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
-                      />
-                    </div>
-
-                    {/* Classes and Sections */}
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        Classes & Sections
-                      </h3>
-
-                      {/* Add Class Section */}
-                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Select Class *
-                            </label>
-                            <select
-                              value={newClassItem.classId}
-                              onChange={(e) =>
-                                setNewClassItem({
-                                  ...newClassItem,
-                                  classId: e.target.value,
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            >
-                              <option value="">Choose a class</option>
-                              {PREDEFINED_CLASSES.map((cls) => (
-                                <option key={cls._id} value={cls._id}>
-                                  {cls.name} ({cls.classCode})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Sections *
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={newClassItem.numberOfSections}
-                              onChange={(e) =>
-                                setNewClassItem({
-                                  ...newClassItem,
-                                  numberOfSections: parseInt(e.target.value),
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Capacity/Section *
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={newClassItem.capacity}
-                              onChange={(e) =>
-                                setNewClassItem({
-                                  ...newClassItem,
-                                  capacity: parseInt(e.target.value),
-                                })
-                              }
-                              placeholder="50"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                          </div>
-
-                          <div className="flex items-end">
+              {/* Added Classes List */}
+              {classes.length > 0 ? (
+                <div className="added-classes">
+                  <h5 className="mb-3">Added Classes:</h5>
+                  <div className="row g-2">
+                    {classes.map((classItem, idx) => (
+                      <div key={idx} className="col-md-6 col-lg-4">
+                        <div className="class-card">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                              <h6 className="class-name">{getClassName(classItem.classId)}</h6>
+                              <p className="class-details mb-1">
+                                Sections: {classItem.numberOfSections} 
+                                {Array.from(
+                                  { length: classItem.numberOfSections },
+                                  (_, i) => String.fromCharCode(65 + i)
+                                ).join(", ")}
+                              </p>
+                              <p className="class-details">Capacity: {classItem.capacity}/section</p>
+                            </div>
                             <button
                               type="button"
-                              onClick={handleAddClass}
-                              className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2"
+                              onClick={() => handleRemoveClass(classItem.classId)}
+                              className="btn btn-sm btn-outline-danger"
                             >
-                              <Plus size={18} />
-                              Add
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-muted text-center py-4">
+                  No classes added yet
+                </div>
+              )}
+            </div>
 
-                      {/* Classes List */}
-                      {classes.length > 0 ? (
-                        <div className="space-y-2">
-                          <h4 className="font-semibold text-gray-700 mb-2">
-                            Added Classes:
-                          </h4>
-                          {classes.map((classItem, idx) => (
-                            <div
+            {/* ================= ACTION BUTTONS ================= */}
+            <div className="col-12 d-flex gap-3 mt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn action-btn primary flex-fill"
+              >
+                {loading
+                  ? "Processing..."
+                  : view === "create"
+                  ? "Create Batch"
+                  : "Update Batch"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setView("list");
+                  setFormData({
+                    name: "",
+                    batchCode: "",
+                    description: "",
+                    startDate: "",
+                    endDate: "",
+                  });
+                  setClasses([]);
+                  setCurrentBatch(null);
+                }}
+                className="btn action-btn outline-secondary flex-fill"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ================= BATCHES LIST ================= */}
+      {view === "list" && (
+        <div className="panel fade-in">
+          {success && (
+            <div className="alert success mb-4">
+              ✓ Operation completed successfully!
+            </div>
+          )}
+
+          {error && (
+            <div className="alert error mb-4">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
+
+          {batches.length > 0 ? (
+            <div className="row g-4">
+              {batches.map((batch) => (
+                <div key={batch._id} className="col-xl-4 col-lg-6 col-md-12">
+                  <div className="batch-card">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <div>
+                        <h5 className="batch-name">{batch.name}</h5>
+                        <p className="batch-code">Code: {batch.batchCode}</p>
+                      </div>
+                      <div className="d-flex gap-1">
+                        <button
+                          onClick={() => handleEditBatch(batch)}
+                          className="btn btn-sm btn-outline-primary"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBatch(batch._id)}
+                          className="btn btn-sm btn-outline-danger"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="row g-2 mb-3">
+                      <div className="col-6">
+                        <small className="text-muted">Start Date</small>
+                        <p>{new Date(batch.startDate).toLocaleDateString()}</p>
+                      </div>
+                      <div className="col-6">
+                        <small className="text-muted">End Date</small>
+                        <p>{new Date(batch.endDate).toLocaleDateString()}</p>
+                      </div>
+                      <div className="col-6">
+                        <small className="text-muted">Total Strength</small>
+                        <p>{batch.strength}</p>
+                      </div>
+                      <div className="col-6">
+                        <small className="text-muted">Classes</small>
+                        <p>{batch.classes?.length || 0}</p>
+                      </div>
+                    </div>
+
+                    {batch.classes && batch.classes.length > 0 && (
+                      <div>
+                        <small className="text-muted d-block mb-2">Classes:</small>
+                        <div className="d-flex flex-wrap gap-1">
+                          {batch.classes.map((classItem, idx) => (
+                            <span
                               key={idx}
-                              className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
+                              className="badge bg-primary bg-opacity-25 text-primary px-2 py-1"
                             >
-                              <div>
-                                <p className="font-medium text-gray-800">
-                                  {getClassName(classItem.classId)}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  Sections: {classItem.numberOfSections}
-                                  {" "}
-                                  {Array.from(
-                                    { length: classItem.numberOfSections },
-                                    (_, i) => String.fromCharCode(65 + i)
-                                  ).join(", ")}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  Capacity/Section: {classItem.capacity}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleRemoveClass(classItem.classId)
-                                }
-                                className="text-red-500 hover:text-red-700 transition"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
+                              {classItem.classId?.name || classItem.classId} (
+                              {classItem.numberOfSections} sections)
+                            </span>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-gray-500 italic">
-                          No classes added yet
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="flex gap-4 pt-4">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {loading
-                          ? "Processing..."
-                          : view === "create"
-                          ? "Create Batch"
-                          : "Update Batch"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setView("list");
-                          setFormData({
-                            name: "",
-                            batchCode: "",
-                            description: "",
-                            startDate: "",
-                            endDate: "",
-                          });
-                          setClasses([]);
-                          setCurrentBatch(null);
-                        }}
-                        className="flex-1 bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-400 transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </>
-            ) : (
-              /* List View */
-              <>
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <Calendar size={32} />
-                    Manage Batches
-                  </h1>
-                  <p className="text-gray-600 mt-2">View, edit, or delete batches</p>
-                </div>
-
-                {success && (
-                  <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                    ✓ Operation completed successfully!
-                  </div>
-                )}
-
-                {error && (
-                  <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <div className="grid gap-4">
-                  {batches.length > 0 ? (
-                    batches.map((batch) => (
-                      <div
-                        key={batch._id}
-                        className="bg-white rounded-lg shadow p-6 border-l-4 border-pink-500"
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-xl font-bold text-gray-800">
-                              {batch.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Code: {batch.batchCode}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditBatch(batch)}
-                              className="text-blue-500 hover:text-blue-700 transition"
-                            >
-                              <Edit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBatch(batch._id)}
-                              className="text-red-500 hover:text-red-700 transition"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-                          <div>
-                            <p className="text-gray-600">Start Date</p>
-                            <p className="font-semibold text-gray-800">
-                              {new Date(batch.startDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">End Date</p>
-                            <p className="font-semibold text-gray-800">
-                              {new Date(batch.endDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Total Strength</p>
-                            <p className="font-semibold text-gray-800">
-                              {batch.strength}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Classes</p>
-                            <p className="font-semibold text-gray-800">
-                              {batch.classes?.length || 0}
-                            </p>
-                          </div>
-                        </div>
-
-                        {batch.classes && batch.classes.length > 0 && (
-                          <div className="border-t pt-4">
-                            <p className="font-semibold text-gray-700 mb-2">
-                              Classes:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {batch.classes.map((classItem, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                                >
-                                  {classItem.classId?.name || classItem.classId} (
-                                  {classItem.numberOfSections} sections)
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    ))
-                  ) : (
-                    <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-                      <p>No batches found. Create one to get started!</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-        </main>
-      </div>
-    </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted mb-0">No batches found. Create one to get started!</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ================= INTERNAL CSS ================= */}
+      <style>{`
+        * {
+          font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-title {
+          font-weight: 700;
+          color: #535434;
+          font-size: 2rem;
+        }
+
+        .dashboard-subtitle {
+          color: #777;
+          font-size: 0.95rem;
+          margin: 0;
+        }
+
+        .tabs-wrapper {
+          display: flex;
+          gap: 1.5rem;
+          margin-bottom: 1.5rem;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 1rem;
+        }
+
+        .tab-btn {
+          background: none;
+          border: none;
+          padding: 0.6rem 0;
+          font-weight: 600;
+          color: #777;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .tab-btn.active {
+          color: #535434;
+          border-bottom: 3px solid #535434;
+        }
+
+        .tab-btn:hover {
+          color: #535434;
+        }
+
+        .panel {
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+        }
+
+        .section-title {
+          color: #535434;
+          font-weight: 600;
+          font-size: 1.25rem;
+        }
+
+        .add-class-panel {
+          background: #f8f9fa;
+          border-radius: 12px;
+          padding: 1.5rem;
+          border: 1px solid #e9ecef;
+        }
+
+        .added-classes {
+          background: #f8f9fa;
+          border-radius: 12px;
+          padding: 1.5rem;
+          border: 1px solid #e9ecef;
+        }
+
+        .class-card, .batch-card {
+          background: white;
+          border-radius: 12px;
+          padding: 1.5rem;
+          border: 1px solid #e9ecef;
+          transition: all 0.2s;
+          height: 100%;
+        }
+
+        .class-card:hover, .batch-card:hover {
+          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          transform: translateY(-2px);
+        }
+
+        .class-name, .batch-name {
+          color: #535434;
+          font-weight: 600;
+          margin: 0 0 0.25rem 0;
+        }
+
+        .batch-code, .class-details {
+          color: #666;
+          font-size: 0.875rem;
+          margin: 0;
+        }
+
+        .custom-input {
+          border-radius: 12px;
+          border: 1px solid #ddd;
+          transition: all 0.2s;
+        }
+
+        .custom-input:focus {
+          border-color: #535434;
+          box-shadow: 0 0 0 3px rgba(83, 84, 52, 0.1);
+        }
+
+        .alert {
+          padding: 0.875rem 1.25rem;
+          border-radius: 12px;
+          margin-bottom: 1.25rem;
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          font-weight: 500;
+        }
+
+        .alert.success {
+          background: #e6e6d1;
+          color: #535434;
+          border: 1px solid #d4d4a8;
+        }
+
+        .alert.error {
+          background: #fdecea;
+          color: #b00020;
+          border: 1px solid #f5c2c7;
+        }
+
+        .action-btn {
+          border-radius: 14px;
+          font-weight: 500;
+          padding: 0.75rem 1rem;
+          font-size: 0.95rem;
+          transition: all 0.2s;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .action-btn.primary {
+          background: #535434;
+          color: #fff;
+        }
+
+        .action-btn.primary:hover:not(:disabled) {
+          background: #45462e;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(83, 84, 52, 0.3);
+        }
+
+        .action-btn.outline-secondary {
+          border: 1px solid #6a6b48;
+          color: #6a6b48;
+          background: transparent;
+        }
+
+        .action-btn.outline-secondary:hover {
+          background: #6a6b48;
+          color: white;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(106, 107, 72, 0.3);
+        }
+
+        .btn-outline-danger {
+          color: #dc3545 !important;
+          border-color: #dc3545 !important;
+        }
+
+        .btn-outline-danger:hover {
+          background-color: #dc3545 !important;
+          color: white !important;
+        }
+
+        .btn-outline-primary {
+          color: #535434 !important;
+          border-color: #535434 !important;
+        }
+
+        .btn-outline-primary:hover {
+          background-color: #535434 !important;
+          color: white !important;
+        }
+
+        .badge {
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .fade-in {
+          animation: fadeIn 0.35s ease;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-title {
+            font-size: 1.5rem;
+          }
+          
+          .panel {
+            padding: 1.5rem;
+          }
+          
+          .tabs-wrapper {
+            gap: 1rem;
+          }
+          
+          .tab-btn {
+            font-size: 0.9rem;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .panel {
+            padding: 1.25rem;
+          }
+          
+          .add-class-panel, .added-classes {
+            padding: 1.25rem;
+          }
+        }
+      `}</style>
+    </AdminLayout>
   );
 }

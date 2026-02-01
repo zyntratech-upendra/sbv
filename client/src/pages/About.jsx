@@ -6,10 +6,14 @@ import {
   Target
 } from "lucide-react";
 import schoolImg from "../assets/about_img.jpg"; // replace with real images later
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import HomeWhyChoose from "../components/HomeWhyChoose";
 
 const About = () => {
   return (
     <>
+    <Navbar/>
       {/* ================= ABOUT PAGE ================= */}
       <section className="about-section">
         <div className="container py-5">
@@ -261,6 +265,8 @@ const About = () => {
           }
         }
       `}</style>
+      <HomeWhyChoose/>
+      <Footer/>
     </>
   );
 };

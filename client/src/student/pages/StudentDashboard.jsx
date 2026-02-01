@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { studentAPI, attendanceAPI } from "../../utils/api";
-import { BookOpen, Calendar, Users, TrendingUp } from "lucide-react";
-import StudentSidebar from "../components/StudentSidebar";
-import StudentTopbar from "../components/StudentTopbar";
+import {
+  BookOpen,
+  Calendar,
+  TrendingUp,
+  IdCard,
+} from "lucide-react";
+import StudentLayout from "../StudentLayout";
+import StatCard from "../components/StatCard";
 import StudentAttendance from "./StudentAttendance";
 
-export default function StudentDashboard() {
+const StudentDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,170 +21,268 @@ export default function StudentDashboard() {
     fetchAttendanceSummary();
   }, []);
 
-  const fetchAttendanceSummary = async () => {
-    try {
-      const response = await attendanceAPI.getStudentSummary();
-      setAttendanceSummary(response.data.summary);
-    } catch (error) {
-      console.error("Error fetching attendance:", error);
-    }
-  };
-
   const fetchDashboard = async () => {
     try {
-      const response = await studentAPI.getDashboard();
-      setDashboard(response.data);
-    } catch (error) {
-      console.error("Error fetching dashboard:", error);
+      const res = await studentAPI.getDashboard();
+      setDashboard(res.data.dashboard);
+    } catch (err) {
+      console.error("Dashboard error", err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
-  }
+  const fetchAttendanceSummary = async () => {
+    try {
+      const res = await attendanceAPI.getStudentSummary();
+      setAttendanceSummary(res.data.summary);
+    } catch (err) {
+      console.error("Attendance error", err);
+    }
+  };
 
   if (showAttendance) {
     return <StudentAttendance />;
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <StudentSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <StudentTopbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Student Dashboard</h1>
-            <p className="text-gray-600 mb-8">Welcome! Here's your academic information</p>
+    <StudentLayout>
+      <div className="dashboard-container">
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-500 text-sm font-medium">Registration Number</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-2">
-                      {dashboard?.dashboard?.registrationNumber || "N/A"}
-                    </p>
-                  </div>
-                  <Users className="w-12 h-12 text-gray-300" />
-                </div>
-              </div>
+        {/* ================= HEADER ================= */}
+        <div className="mb-4">
+          <h2 className="dashboard-title">Dashboard</h2>
+          <p className="dashboard-subtitle">
+            Overview of your academic information
+          </p>
+        </div>
 
-              <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-500 text-sm font-medium">Class</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-2">
-                      {dashboard?.dashboard?.className || "N/A"}
-                    </p>
-                  </div>
-                  <BookOpen className="w-12 h-12 text-gray-300" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-500 text-sm font-medium">Batch</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-2">
-                      {dashboard?.dashboard?.batchName || "N/A"}
-                    </p>
-                  </div>
-                  <Calendar className="w-12 h-12 text-gray-300" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-orange-500">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-500 text-sm font-medium">Attendance</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-2">
-                      {attendanceSummary?.percentage || "N/A"}%
-                    </p>
-                  </div>
-                  <TrendingUp className="w-12 h-12 text-gray-300" />
-                </div>
-              </div>
+        {/* ================= STATS ================= */}
+        {loading ? (
+          <div className="loading-card">Loading dashboard data…</div>
+        ) : (
+          <div className="row g-4 mb-4">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <StatCard
+                title="Registration No"
+                value={dashboard?.registrationNumber || "—"}
+                icon={<IdCard size={22} />}
+                accent="#7a1f2b"
+              />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Academic Information</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Registration:</span>
-                    <span className="font-semibold text-gray-800">
-                      {dashboard?.dashboard?.registrationNumber}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Class:</span>
-                    <span className="font-semibold text-gray-800">
-                      {dashboard?.dashboard?.className}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Batch:</span>
-                    <span className="font-semibold text-gray-800">
-                      {dashboard?.dashboard?.batchName}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                      Active
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="col-12 col-sm-6 col-xl-3">
+              <StatCard
+                title="Class"
+                value={dashboard?.className || "—"}
+                icon={<BookOpen size={22} />}
+                accent="#4a2c2a"
+              />
+            </div>
 
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Attendance Summary</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Total Classes:</span>
-                    <span className="font-semibold text-gray-800">
-                      {attendanceSummary?.total || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Present:</span>
-                    <span className="font-semibold text-green-600">
-                      {attendanceSummary?.present || "0"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Absent:</span>
-                    <span className="font-semibold text-red-600">
-                      {attendanceSummary?.absent || "0"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pb-3 border-b">
-                    <span className="text-gray-600">Leave:</span>
-                    <span className="font-semibold text-yellow-600">
-                      {attendanceSummary?.leave || "0"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Attendance Percentage:</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                      {attendanceSummary?.percentage || "0"}%
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowAttendance(true)}
-                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition"
-                  >
-                    View Full Attendance Record
-                  </button>
-                </div>
-              </div>
+            <div className="col-12 col-sm-6 col-xl-3">
+              <StatCard
+                title="Batch"
+                value={dashboard?.batchName || "—"}
+                icon={<Calendar size={22} />}
+                accent="#8b5e57"
+              />
+            </div>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <StatCard
+                title="Attendance %"
+                value={`${attendanceSummary?.percentage || 0}%`}
+                icon={<TrendingUp size={22} />}
+                accent="#a16207"
+              />
             </div>
           </div>
-        </main>
+        )}
+
+        {/* ================= PANELS ================= */}
+        <div className="row g-4">
+          {/* Academic Info */}
+          <div className="col-12 col-lg-6">
+            <div className="panel">
+              <h5 className="panel-title">Academic Information</h5>
+
+              <InfoRow label="Registration">
+                {dashboard?.registrationNumber}
+              </InfoRow>
+
+              <InfoRow label="Class">
+                {dashboard?.className}
+              </InfoRow>
+
+              <InfoRow label="Batch">
+                {dashboard?.batchName}
+              </InfoRow>
+
+              <InfoRow label="Status">
+                <span className="status-badge success">Active</span>
+              </InfoRow>
+            </div>
+          </div>
+
+          {/* Attendance Summary */}
+          <div className="col-12 col-lg-6">
+            <div className="panel">
+              <h5 className="panel-title">Attendance Summary</h5>
+
+              <InfoRow label="Total Classes">
+                {attendanceSummary?.total || 0}
+              </InfoRow>
+
+              <InfoRow label="Present">
+                <span className="text-success">
+                  {attendanceSummary?.present || 0}
+                </span>
+              </InfoRow>
+
+              <InfoRow label="Absent">
+                <span className="text-danger">
+                  {attendanceSummary?.absent || 0}
+                </span>
+              </InfoRow>
+
+              <InfoRow label="Leave">
+                <span className="text-warning">
+                  {attendanceSummary?.leave || 0}
+                </span>
+              </InfoRow>
+
+              <button
+                className="btn action-btn primary w-100 mt-3"
+                onClick={() => setShowAttendance(true)}
+              >
+                View Full Attendance
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= INTERNAL CSS ================= */}
+        <style>{`
+          * {
+            font-family: 'Inter', sans-serif;
+          }
+
+          .dashboard-container {
+            width: 100%;
+            animation: fadeIn 0.4s ease;
+          }
+
+          .dashboard-title {
+            font-weight: 700;
+            color: #7a1f2b;
+          }
+
+          .dashboard-subtitle {
+            color: #777;
+            font-size: 0.95rem;
+          }
+
+          .loading-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+          }
+
+          /* Panels */
+          .panel {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.6rem;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+            height: 100%;
+          }
+
+          .panel-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #5b1620;
+          }
+
+          /* Info Rows */
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95rem;
+            color: #555;
+          }
+
+          .info-row:last-child {
+            border-bottom: none;
+          }
+
+          /* Status */
+          .status-badge {
+            padding: 0.25rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+          }
+
+          .status-badge.success {
+            background: #e6f4ea;
+            color: #166534;
+          }
+
+          /* Buttons */
+          .action-btn {
+            border-radius: 14px;
+            font-weight: 500;
+            padding: 0.65rem;
+          }
+
+          .action-btn.primary {
+            background: #7a1f2b;
+            color: #fff;
+            border: none;
+          }
+
+          .action-btn.primary:hover {
+            background: #5b1620;
+          }
+
+          /* Text helpers */
+          .text-success { color: #166534; }
+          .text-danger { color: #b91c1c; }
+          .text-warning { color: #a16207; }
+
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @media (max-width: 576px) {
+            .panel {
+              padding: 1.3rem;
+            }
+          }
+        `}</style>
       </div>
-    </div>
+    </StudentLayout>
   );
-}
+};
+
+/* ================= SMALL COMPONENT ================= */
+const InfoRow = ({ label, children }) => (
+  <div className="info-row">
+    <span>{label}</span>
+    <strong>{children}</strong>
+  </div>
+);
+
+export default StudentDashboard;

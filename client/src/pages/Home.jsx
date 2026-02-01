@@ -1,21 +1,25 @@
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import HomeHero from "../components/HomeHero";
 import HomeStats from "../components/HomeStats";
+import HomeFeatures from "../components/HomeFeatures";
+import HomeWorkflow from "../components/HomeWorkflow";
+import HomeModules from "../components/HomeModules";
+import HomeWhyChoose from "../components/HomeWhyChoose";
+import HomeCTA from "../components/HomeCTA";
 
 const Home = () => {
   return (
     <>
+    <Navbar/>
     <HomeHero/>
-    <HomeStats/>
-    <div className="container py-5">
-      <div className="text-center">
-        <h1 className="fw-bold text-primary">
-          Welcome to School Management System
-        </h1>
-        <p className="text-muted mt-3">
-          Manage students, teachers, attendance, and fees efficiently.
-        </p>
-      </div>
-    </div>
+   
+    <HomeFeatures/>
+    <HomeWorkflow/>
+    <HomeModules/>
+     <HomeStats/>
+     <HomeCTA/>
+    <Footer/>
     </>
   );
 };

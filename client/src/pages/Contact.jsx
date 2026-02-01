@@ -5,10 +5,13 @@ import {
   Clock,
   Send
 } from "lucide-react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const Contact = () => {
   return (
     <>
+    <Navbar/>
       {/* ================= CONTACT PAGE ================= */}
       <section className="contact-section">
         <div className="container py-5">
@@ -246,6 +249,7 @@ const Contact = () => {
           }
         }
       `}</style>
+      <Footer/>
     </>
   );
 };

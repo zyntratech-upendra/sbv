@@ -1,14 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "../utils/api";
-import { Mail, Lock, AlertCircle } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  LogIn
+} from "lucide-react";
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 
-export default function Login() {
+const Login = () => {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -24,7 +35,7 @@ export default function Login() {
 
       if (user.role === "admin") navigate("/admin/dashboard");
       else if (user.role === "teacher") navigate("/teacher/dashboard");
-      else if (user.role === "student") navigate("/student/dashboard");
+      else navigate("/student/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
@@ -33,80 +44,230 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">SBV</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800">School Management</h1>
-          <p className="text-gray-500 mt-2">Login to your account</p>
-        </div>
+    <>
+    <Navbar/>
+      {/* ================= LOGIN PAGE ================= */}
+      <section className="login-section">
+        <div className="container">
+          <div className="row justify-content-center align-items-center min-vh-100">
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+            <div className="col-lg-5 col-md-7 col-sm-10">
+              <div className="login-card">
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                required
-              />
+                {/* Header */}
+                <div className="text-center mb-4">
+                  <div className="login-logo">SBV</div>
+                  <h2 className="login-title">Welcome Back</h2>
+                  <p className="login-subtitle">
+                    Login to SBV School Management System
+                  </p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                  <div className="login-error">
+                    <AlertCircle size={18} />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={handleLogin}>
+                  {/* Email */}
+                  <div className="mb-3">
+                    <label className="form-label">Email Address</label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <Mail size={18} />
+                      </span>
+                      <input
+                        type="email"
+                        className="form-control"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="mb-4">
+                    <label className="form-label">Password</label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <Lock size={18} />
+                      </span>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        className="form-control"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="btn toggle-btn"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    className="btn login-btn w-100"
+                    disabled={loading}
+                  >
+                    {loading ? "Logging in..." : (
+                      <>
+                        <LogIn size={18} />
+                        Login
+                      </>
+                    )}
+                  </button>
+                </form>
+
+              </div>
             </div>
+
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                required
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 rounded-lg hover:shadow-lg transform hover:scale-105 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm">
-          <p className="font-semibold text-gray-700 mb-2">Demo Credentials:</p>
-          <p className="text-gray-600">
-            <strong>Admin:</strong> admin@school.com / Admin@123
-          </p>
-          <p className="text-gray-600">
-            <strong>Teacher:</strong> teacher@school.com / Teacher@123
-          </p>
-          <p className="text-gray-600">
-            <strong>Student:</strong> student@school.com / Student@123
-          </p>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* ================= INTERNAL CSS ================= */}
+      <style>{`
+        * {
+          font-family: 'Inter', sans-serif;
+        }
+
+        .login-section {
+          background: linear-gradient(180deg, #d7d8b6 0%, #f2f2e4 100%);
+        }
+
+        .login-card {
+          background: #ffffff;
+          border-radius: 22px;
+          padding: 2.5rem;
+          box-shadow: 0 25px 55px rgba(0,0,0,0.18);
+          animation: fadeUp 0.6s ease;
+        }
+
+        .login-logo {
+          width: 64px;
+          height: 64px;
+          background: linear-gradient(135deg, #535434, #6a6b48);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 1.4rem;
+          margin: 0 auto 1rem;
+        }
+
+        .login-title {
+          font-weight: 700;
+          color: #535434;
+        }
+
+        .login-subtitle {
+          font-size: 0.95rem;
+          color: #666;
+        }
+
+        .form-label {
+          font-weight: 500;
+          color: #535434;
+        }
+
+        .input-group-text {
+          background-color: #f4f4ea;
+          border: 1px solid #ccc;
+        }
+
+        .form-control {
+          border: 1px solid #ccc;
+        }
+
+        .form-control:focus {
+          border-color: #535434;
+          box-shadow: 0 0 0 0.15rem rgba(83,84,52,0.25);
+        }
+
+        .toggle-btn {
+          border: 1px solid #ccc;
+          background: #f4f4ea;
+        }
+
+        .toggle-btn:hover {
+          background: #e6e6d1;
+        }
+
+        .login-btn {
+          background-color: #535434;
+          color: #ffffff;
+          font-weight: 600;
+          padding: 0.7rem;
+          border-radius: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+        }
+
+        .login-btn:hover:not(:disabled) {
+          background-color: #6a6b48;
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .login-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .login-error {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          background: #fdecec;
+          color: #a94442;
+          padding: 0.6rem 0.8rem;
+          border-radius: 10px;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+        }
+
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 576px) {
+          .login-card {
+            padding: 2rem 1.5rem;
+          }
+        }
+      `}</style>
+      <Footer/>
+    </>
   );
-}
+};
+
+export default Login;

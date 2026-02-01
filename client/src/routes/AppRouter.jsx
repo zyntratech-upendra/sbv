@@ -1,5 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+// Public Pages
+import Home from "../pages/Home";
+import About from "../pages/About";
+import Contact from "../pages/Contact";
 import Login from "../pages/Login";
 
 // Admin Pages
@@ -45,6 +49,9 @@ const AppRouter = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<Home/>} />
+      <Route path="/about" element={<About/>} />
+      <Route path="/contact" element={<Contact/>} />
       <Route path="/login" element={<Login />} />
 
       {/* Admin Routes */}
@@ -190,7 +197,7 @@ const AppRouter = () => {
       />
 
       {/* Catch All */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

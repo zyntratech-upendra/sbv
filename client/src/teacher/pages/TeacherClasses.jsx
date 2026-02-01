@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import TeacherSidebar from "../components/TeacherSidebar";
-import TeacherTopbar from "../components/TeacherTopbar";
+import { useEffect, useState } from "react";
 import { teacherAPI } from "../../utils/api";
 import { AlertCircle, Users, BookOpen } from "lucide-react";
+import TeacherLayout from "../TeacherLayout";
 
-export default function TeacherClasses() {
+const TeacherClasses = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,86 +15,185 @@ export default function TeacherClasses() {
   const fetchTeacherClasses = async () => {
     try {
       setLoading(true);
-      const response = await teacherAPI.getClasses();
-      setClasses(response.data.classes || []);
+      const res = await teacherAPI.getClasses();
+      setClasses(res.data.classes || []);
       setError("");
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      setError(error.response?.data?.message || "Error loading classes");
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+      setError(err.response?.data?.message || "Error loading classes");
       setClasses([]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-gray-100">
-        <TeacherSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TeacherTopbar />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-              <p className="mt-4 text-gray-600">Loading your classes...</p>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-screen bg-gray-100">
-      <TeacherSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TeacherTopbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-8">My Classes</h1>
-            
-            {error && (
-              <div className="mb-6 p-4 rounded-lg bg-red-100 text-red-700 border border-red-300 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {classes.length > 0 ? (
-                classes.map((cls) => (
-                  <div key={cls._id} className="bg-white rounded-lg shadow-lg hover:shadow-xl transition p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <BookOpen className="w-6 h-6 text-blue-600" />
+    <TeacherLayout>
+      <div className="dashboard-container">
+
+        {/* HEADER */}
+        <div className="mb-4">
+          <h2 className="dashboard-title">My Classes</h2>
+          <p className="dashboard-subtitle">
+            Classes and batches assigned to you
+          </p>
+        </div>
+
+        {/* ERROR */}
+        {error && (
+          <div className="alert alert-danger d-flex align-items-center gap-2">
+            <AlertCircle size={18} />
+            {error}
+          </div>
+        )}
+
+        {/* LOADING */}
+        {loading ? (
+          <div className="loading-card">Loading your classes…</div>
+        ) : (
+          <div className="row g-4">
+            {classes.length > 0 ? (
+              classes.map((cls) => (
+                <div key={cls._id} className="col-12 col-md-6 col-xl-4">
+                  <div className="class-card">
+                    <div className="class-icon">
+                      <BookOpen size={22} />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">{cls.name}</h3>
-                    <div className="space-y-2 text-gray-600">
+
+                    <h5 className="class-title">{cls.name}</h5>
+
+                    <div className="class-meta">
                       <p>
-                        <span className="font-semibold">Batch:</span> {cls.batchId?.name || "N/A"}
+                        <span>Batch:</span>{" "}
+                        {cls.batchId?.name || "N/A"}
                       </p>
                       <p>
-                        <span className="font-semibold">Section:</span> {cls.sectionId?.name || "N/A"}
-                      </p>
-                      <p className="flex items-center gap-2 pt-2 border-t">
-                        <Users className="w-4 h-4" />
-                        <span className="font-semibold">Students:</span> {cls.students?.length || 0}
+                        <span>Section:</span>{" "}
+                        {cls.sectionId?.name || "N/A"}
                       </p>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full">
-                  <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 text-lg">No classes assigned yet</p>
-                    <p className="text-gray-500 mt-2">Contact your administrator to get assigned to classes</p>
+
+                    <div className="class-footer">
+                      <Users size={16} />
+                      <span>
+                        {cls.students?.length || 0} Students
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <div className="col-12">
+                <div className="empty-card">
+                  <AlertCircle size={42} />
+                  <h5>No classes assigned</h5>
+                  <p>
+                    Please contact the administrator to assign classes
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </main>
+        )}
+
+        {/* INTERNAL CSS */}
+        <style>{`
+          * {
+            font-family: 'Inter', sans-serif;
+          }
+
+          .dashboard-title {
+            font-weight: 700;
+            color: #065f46;
+          }
+
+          .dashboard-subtitle {
+            color: #6b7280;
+          }
+
+          .loading-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+          }
+
+          /* CLASS CARD */
+          .class-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.6rem;
+            height: 100%;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .class-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+          }
+
+          .class-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #ecfdf5;
+            color: #0f766e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+          }
+
+          .class-title {
+            font-weight: 600;
+            color: #064e3b;
+            margin-bottom: 0.75rem;
+          }
+
+          .class-meta p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #4b5563;
+          }
+
+          .class-meta span {
+            font-weight: 600;
+            color: #065f46;
+          }
+
+          .class-footer {
+            margin-top: auto;
+            padding-top: 0.8rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: #374151;
+          }
+
+          /* EMPTY */
+          .empty-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+            color: #6b7280;
+          }
+
+          .empty-card h5 {
+            margin-top: 1rem;
+            color: #374151;
+          }
+        `}</style>
       </div>
-    </div>
+    </TeacherLayout>
   );
-}
+};
+
+export default TeacherClasses;

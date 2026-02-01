@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { teacherAPI } from "../../utils/api";
-import { User, Mail, Phone, Calendar } from "lucide-react";
-import TeacherSidebar from "../components/TeacherSidebar";
-import TeacherTopbar from "../components/TeacherTopbar";
+import { User, Mail, Phone, Award, BookOpen } from "lucide-react";
+import TeacherLayout from "../TeacherLayout";
 
-export default function TeacherProfile() {
+const TeacherProfile = () => {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -21,16 +21,17 @@ export default function TeacherProfile() {
 
   const fetchProfile = async () => {
     try {
-      const response = await teacherAPI.getProfile();
-      setProfile(response.data.profile);
+      const res = await teacherAPI.getProfile();
+      const p = res.data.profile;
+      setProfile(p);
       setFormData({
-        name: response.data.profile.name,
-        phone: response.data.profile.phone,
-        qualifications: response.data.profile.qualifications,
-        specialization: response.data.profile.specialization,
+        name: p.name || "",
+        phone: p.phone || "",
+        qualifications: p.qualifications || "",
+        specialization: p.specialization || "",
       });
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+    } catch (err) {
+      console.error("Profile fetch error", err);
     } finally {
       setLoading(false);
     }
@@ -38,10 +39,7 @@ export default function TeacherProfile() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -50,139 +48,276 @@ export default function TeacherProfile() {
       await teacherAPI.updateProfile(formData);
       await fetchProfile();
       setEditing(false);
-      alert("Profile updated successfully!");
-    } catch (error) {
-      alert("Error updating profile: " + error.response?.data?.message);
+      alert("Profile updated successfully");
+    } catch (err) {
+      alert(err.response?.data?.message || "Update failed");
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
-  }
-
   return (
-    <div className="flex h-screen bg-gray-100">
-      <TeacherSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TeacherTopbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-              <User size={32} />
-              My Profile
-            </h1>
-            <p className="text-gray-600 mb-8">View and manage your profile information</p>
+    <TeacherLayout>
+      <div className="profile-page">
 
-            <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                    {profile?.name?.[0] || "T"}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800">{profile?.name}</h2>
-                    <p className="text-gray-600">{profile?.role}</p>
-                  </div>
+        {/* HEADER */}
+        <div className="page-header mb-4">
+          <h2>My Profile</h2>
+          <p>Manage your personal and professional information</p>
+        </div>
+
+        {loading ? (
+          <div className="loading-card">Loading profile…</div>
+        ) : (
+          <div className="row g-4">
+            {/* LEFT PROFILE CARD */}
+            <div className="col-12 col-lg-4">
+              <div className="profile-card">
+                <div className="avatar-xl">
+                  {profile?.name?.[0] || "T"}
                 </div>
+
+                <h4>{profile?.name}</h4>
+                <p className="role">{profile?.role || "Teacher"}</p>
+
+                <div className="divider" />
+
+                <ProfileMini icon={<Mail size={16} />} value={profile?.email} />
+                <ProfileMini icon={<Phone size={16} />} value={profile?.phone || "N/A"} />
+
                 <button
+                  className={`btn w-100 mt-3 ${
+                    editing ? "btn-outline-danger" : "btn-outline-success"
+                  }`}
                   onClick={() => setEditing(!editing)}
-                  className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition"
                 >
-                  {editing ? "Cancel" : "Edit Profile"}
+                  {editing ? "Cancel Editing" : "Edit Profile"}
                 </button>
               </div>
+            </div>
 
-              {editing ? (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                    />
-                  </div>
+            {/* RIGHT DETAILS */}
+            <div className="col-12 col-lg-8">
+              <div className="panel">
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                    />
-                  </div>
+                <h5 className="section-title">
+                  {editing ? "Edit Information" : "Profile Information"}
+                </h5>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Qualifications</label>
-                    <textarea
-                      name="qualifications"
-                      value={formData.qualifications}
-                      onChange={handleChange}
-                      rows="3"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
-                    <input
-                      type="text"
-                      name="specialization"
-                      value={formData.specialization}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition"
-                  >
-                    Save Changes
-                  </button>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 pb-4 border-b">
-                    <Mail className="text-green-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Email</p>
-                      <p className="text-lg text-gray-800">{profile?.email}</p>
+                {editing ? (
+                  <form onSubmit={handleSubmit} className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Full Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        className="form-control"
+                        value={formData.name}
+                        onChange={handleChange}
+                      />
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 pb-4 border-b">
-                    <Phone className="text-green-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Phone</p>
-                      <p className="text-lg text-gray-800">{profile?.phone || "N/A"}</p>
+                    <div className="col-md-6">
+                      <label className="form-label">Phone</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        className="form-control"
+                        value={formData.phone}
+                        onChange={handleChange}
+                      />
                     </div>
-                  </div>
 
-                  <div className="pb-4 border-b">
-                    <p className="text-sm text-gray-600">Department</p>
-                    <p className="text-lg text-gray-800">{profile?.department || "N/A"}</p>
-                  </div>
+                    <div className="col-12">
+                      <label className="form-label">Qualifications</label>
+                      <textarea
+                        name="qualifications"
+                        rows="3"
+                        className="form-control"
+                        value={formData.qualifications}
+                        onChange={handleChange}
+                      />
+                    </div>
 
-                  <div className="pb-4 border-b">
-                    <p className="text-sm text-gray-600">Qualifications</p>
-                    <p className="text-lg text-gray-800">{profile?.qualifications || "N/A"}</p>
-                  </div>
+                    <div className="col-12">
+                      <label className="form-label">Specialization</label>
+                      <input
+                        type="text"
+                        name="specialization"
+                        className="form-control"
+                        value={formData.specialization}
+                        onChange={handleChange}
+                      />
+                    </div>
 
-                  <div>
-                    <p className="text-sm text-gray-600">Specialization</p>
-                    <p className="text-lg text-gray-800">{profile?.specialization || "N/A"}</p>
+                    <div className="col-12">
+                      <button className="btn btn-success w-100 py-2">
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="info-grid">
+                    <ProfileItem
+                      icon={<BookOpen />}
+                      label="Department"
+                      value={profile?.department || "N/A"}
+                    />
+                    <ProfileItem
+                      icon={<Award />}
+                      label="Qualifications"
+                      value={profile?.qualifications || "N/A"}
+                    />
+                    <ProfileItem
+                      icon={<User />}
+                      label="Specialization"
+                      value={profile?.specialization || "N/A"}
+                    />
                   </div>
-                </div>
-              )}
+                )}
+
+              </div>
             </div>
           </div>
-        </main>
+        )}
+
+        {/* ================= STYLES ================= */}
+        <style>{`
+          * {
+            font-family: 'Inter', sans-serif;
+          }
+
+          .profile-page {
+            animation: fadeIn 0.4s ease;
+          }
+
+          .page-header h2 {
+            font-weight: 700;
+            color: #065f46;
+          }
+
+          .page-header p {
+            color: #6b7280;
+          }
+
+          .loading-card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+          }
+
+          /* LEFT CARD */
+          .profile-card {
+            background: linear-gradient(180deg, #0f766e, #115e59);
+            color: #ffffff;
+            border-radius: 22px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+          }
+
+          .avatar-xl {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 auto 1rem;
+          }
+
+          .profile-card h4 {
+            margin-bottom: 0.25rem;
+          }
+
+          .role {
+            font-size: 0.85rem;
+            opacity: 0.85;
+          }
+
+          .divider {
+            height: 1px;
+            background: rgba(255,255,255,0.3);
+            margin: 1.2rem 0;
+          }
+
+          .profile-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+          }
+
+          /* RIGHT PANEL */
+          .panel {
+            background: #ffffff;
+            border-radius: 22px;
+            padding: 2rem;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+            height: 100%;
+          }
+
+          .section-title {
+            font-weight: 600;
+            color: #065f46;
+            margin-bottom: 1.5rem;
+          }
+
+          .info-grid {
+            display: grid;
+            gap: 1.2rem;
+          }
+
+          .profile-item {
+            display: flex;
+            gap: 12px;
+            padding: 1rem;
+            border-radius: 14px;
+            background: #ecfdf5;
+          }
+
+          .profile-item-icon {
+            color: #0f766e;
+          }
+
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
       </div>
-    </div>
+    </TeacherLayout>
   );
-}
+};
+
+/* SMALL COMPONENTS */
+const ProfileMini = ({ icon, value }) => (
+  <div className="profile-mini">
+    {icon}
+    <span>{value}</span>
+  </div>
+);
+
+const ProfileItem = ({ icon, label, value }) => (
+  <div className="profile-item">
+    <div className="profile-item-icon">{icon}</div>
+    <div>
+      <div className="small text-muted">{label}</div>
+      <div className="fw-semibold">{value}</div>
+    </div>
+  </div>
+);
+
+export default TeacherProfile;

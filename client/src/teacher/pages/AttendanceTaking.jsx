@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { attendanceAPI, commonAPI, timetableAPI } from "../../utils/api";
-import { Check, X, AlertCircle, Download } from "lucide-react";
+import { Check, X, AlertCircle } from "lucide-react";
 
-export default function AttendanceTaking() {
+const AttendanceTaking = () => {
   const [batches, setBatches] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
@@ -23,7 +22,6 @@ export default function AttendanceTaking() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  // Get teacher ID from localStorage
   const teacherId = localStorage.getItem("userId");
 
   useEffect(() => {
@@ -38,74 +36,66 @@ export default function AttendanceTaking() {
   }, [selectedBatch, selectedClass]);
 
   useEffect(() => {
-    if (selectedBatch && selectedClass && selectedSection && selectedSubject) {
+    if (
+      selectedBatch &&
+      selectedClass &&
+      selectedSection &&
+      selectedSubject &&
+      selectedPeriod
+    ) {
       fetchStudents();
       loadExistingAttendance();
     }
-  }, [selectedBatch, selectedClass, selectedSection, selectedSubject, attendanceDate, selectedPeriod]);
+  }, [
+    selectedBatch,
+    selectedClass,
+    selectedSection,
+    selectedSubject,
+    selectedPeriod,
+    attendanceDate,
+  ]);
 
   const fetchBatches = async () => {
-    try {
-      const response = await commonAPI.getBatches();
-      setBatches(response.data.batches || []);
-    } catch (error) {
-      console.error("Error fetching batches:", error);
-    }
+    const res = await commonAPI.getBatches();
+    setBatches(res.data.batches || []);
   };
 
   const fetchSections = async () => {
-    try {
-      const response = await commonAPI.getSections(selectedBatch, selectedClass);
-      setSections(response.data.sections || []);
-    } catch (error) {
-      console.error("Error fetching sections:", error);
-    }
+    const res = await commonAPI.getSections(selectedBatch, selectedClass);
+    setSections(res.data.sections || []);
   };
 
   const fetchSubjects = async () => {
-    try {
-      const response = await timetableAPI.getTimetable(
-        selectedBatch,
-        selectedClass,
-        selectedSection || ""
-      );
-      const uniqueSubjects = [
-        ...new Map(
-          response.data.timetable.map((item) => [
-            item.subjectId._id,
-            item.subjectId,
-          ])
-        ).values(),
-      ];
-      setSubjects(uniqueSubjects);
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-    }
+    const res = await timetableAPI.getTimetable(
+      selectedBatch,
+      selectedClass,
+      selectedSection || ""
+    );
+
+    const unique = [
+      ...new Map(
+        res.data.timetable.map((t) => [t.subjectId._id, t.subjectId])
+      ).values(),
+    ];
+    setSubjects(unique);
   };
 
   const fetchStudents = async () => {
-    try {
-      const response = await attendanceAPI.getClassStudents({
-        batchId: selectedBatch,
-        classId: selectedClass,
-        sectionId: selectedSection,
-      });
-      setStudents(response.data.students || []);
-      // Initialize attendance state
-      const initialAttendance = {};
-      response.data.students.forEach((student) => {
-        initialAttendance[student._id] = "absent";
-      });
-      setAttendance(initialAttendance);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    }
+    const res = await attendanceAPI.getClassStudents({
+      batchId: selectedBatch,
+      classId: selectedClass,
+      sectionId: selectedSection,
+    });
+
+    setStudents(res.data.students || []);
+    const init = {};
+    res.data.students.forEach((s) => (init[s._id] = "absent"));
+    setAttendance(init);
   };
 
   const loadExistingAttendance = async () => {
     try {
-      if (!selectedPeriod) return;
-      const response = await attendanceAPI.getClassAttendance({
+      const res = await attendanceAPI.getClassAttendance({
         batchId: selectedBatch,
         classId: selectedClass,
         sectionId: selectedSection,
@@ -113,327 +103,279 @@ export default function AttendanceTaking() {
         period: selectedPeriod,
       });
 
-      const attendanceMap = {};
-      response.data.attendance.forEach((record) => {
-        attendanceMap[record.studentId._id] = record.status;
-      });
-
-      setAttendance(attendanceMap);
-    } catch (error) {
-      console.error("Error loading existing attendance:", error);
-    }
-  };
-
-  const handleAttendanceChange = (studentId, status) => {
-    setAttendance((prev) => ({
-      ...prev,
-      [studentId]: status,
-    }));
+      const map = {};
+      res.data.attendance.forEach(
+        (r) => (map[r.studentId._id] = r.status)
+      );
+      setAttendance(map);
+    } catch {}
   };
 
   const handleMarkAll = (status) => {
     const updated = {};
-    students.forEach((student) => {
-      updated[student._id] = status;
-    });
+    students.forEach((s) => (updated[s._id] = status));
     setAttendance(updated);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!selectedBatch || !selectedClass || !selectedSection || !selectedSubject || !selectedPeriod) {
+  const handleSubmit = async () => {
+    if (
+      !selectedBatch ||
+      !selectedClass ||
+      !selectedSection ||
+      !selectedSubject ||
+      !selectedPeriod
+    ) {
       setMessage("Please select all required fields");
       setMessageType("error");
       return;
     }
 
     setLoading(true);
-
     try {
-      const attendanceData = students.map((student) => ({
-        studentId: student._id,
-        status: attendance[student._id] || "absent",
-      }));
-
-      const response = await attendanceAPI.markAttendance({
+      await attendanceAPI.markAttendance({
         batchId: selectedBatch,
         classId: selectedClass,
         sectionId: selectedSection,
         subjectId: selectedSubject,
-        teacherId: teacherId,
+        teacherId,
         date: attendanceDate,
-        period: parseInt(selectedPeriod),
-        attendance: attendanceData,
+        period: Number(selectedPeriod),
+        attendance: students.map((s) => ({
+          studentId: s._id,
+          status: attendance[s._id] || "absent",
+        })),
       });
 
-      setMessage(`Attendance marked successfully for ${response.data.count} students`);
+      setMessage("Attendance saved successfully");
       setMessageType("success");
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Error marking attendance");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to save attendance");
       setMessageType("error");
     } finally {
       setLoading(false);
     }
   };
 
-  const getAttendanceStats = () => {
-    const present = Object.values(attendance).filter((s) => s === "present").length;
-    const absent = Object.values(attendance).filter((s) => s === "absent").length;
-    const leave = Object.values(attendance).filter((s) => s === "leave").length;
-
-    return { present, absent, leave };
+  const stats = {
+    present: Object.values(attendance).filter((s) => s === "present").length,
+    absent: Object.values(attendance).filter((s) => s === "absent").length,
+    leave: Object.values(attendance).filter((s) => s === "leave").length,
   };
 
-  const stats = getAttendanceStats();
-
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Mark Attendance</h1>
-      <p className="text-gray-600 mb-8">Record student attendance by period and subject</p>
+    <div className="attendance-container">
 
       {message && (
         <div
-          className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
-            messageType === "error"
-              ? "bg-red-100 text-red-700 border border-red-300"
-              : "bg-green-100 text-green-700 border border-green-300"
-          }`}
+          className={`alert ${
+            messageType === "error" ? "alert-danger" : "alert-success"
+          } d-flex align-items-center gap-2`}
         >
-          {messageType === "error" ? (
-            <AlertCircle className="w-5 h-5" />
-          ) : (
-            <Check className="w-5 h-5" />
-          )}
+          <AlertCircle size={18} />
           {message}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        {/* Filters on left */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Filters</h2>
+      <div className="row g-4">
+        {/* FILTERS */}
+        <div className="col-lg-4">
+          <div className="panel">
+            <h6 className="panel-title">Filters</h6>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+            <div className="mb-3">
+              <label className="form-label">Batch</label>
               <select
+                className="form-select"
                 value={selectedBatch}
                 onChange={(e) => {
                   setSelectedBatch(e.target.value);
                   setSelectedClass("");
-                  setSelectedSection("");
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Batch</option>
-                {batches.map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.name}
-                  </option>
+                <option value="">Select batch</option>
+                {batches.map((b) => (
+                  <option key={b._id} value={b._id}>{b.name}</option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
+            <div className="mb-3">
+              <label className="form-label">Class</label>
               <input
-                type="text"
+                className="form-control"
                 value={selectedClass}
-                onChange={(e) => {
-                  setSelectedClass(e.target.value);
-                  setSelectedSection("");
-                }}
-                placeholder="Enter class (e.g., Class 10)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setSelectedClass(e.target.value)}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+            <div className="mb-3">
+              <label className="form-label">Section</label>
               <select
+                className="form-select"
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Section</option>
-                {sections.map((section, idx) => (
-                  <option key={idx} value={section}>
-                    {section}
-                  </option>
+                <option value="">Select section</option>
+                {sections.map((s, i) => (
+                  <option key={i} value={s}>{s}</option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+            <div className="mb-3">
+              <label className="form-label">Subject</label>
               <select
+                className="form-select"
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Subject</option>
-                {subjects.map((subject) => (
-                  <option key={subject._id} value={subject._id}>
-                    {subject.name} ({subject.code})
+                <option value="">Select subject</option>
+                {subjects.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <div className="mb-3">
+              <label className="form-label">Date</label>
               <input
                 type="date"
+                className="form-control"
                 value={attendanceDate}
                 onChange={(e) => setAttendanceDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
+              <label className="form-label">Period</label>
               <select
+                className="form-select"
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Period</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
-                  <option key={period} value={period}>
-                    Period {period}
-                  </option>
+                <option value="">Select period</option>
+                {[1,2,3,4,5,6,7,8].map((p) => (
+                  <option key={p} value={p}>Period {p}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Statistics and marking area */}
-        <div className="lg:col-span-3">
-          {students.length > 0 ? (
+        {/* STUDENTS */}
+        <div className="col-lg-8">
+          {students.length === 0 ? (
+            <div className="panel text-center text-muted">
+              Select filters to load students
+            </div>
+          ) : (
             <>
-              {/* Statistics */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-green-500">
-                  <p className="text-gray-600 text-sm">Present</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.present}</p>
-                </div>
-                <div className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-red-500">
-                  <p className="text-gray-600 text-sm">Absent</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
-                </div>
-                <div className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-yellow-500">
-                  <p className="text-gray-600 text-sm">Leave</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.leave}</p>
-                </div>
+              {/* STATS */}
+              <div className="row g-3 mb-3">
+                <Stat label="Present" value={stats.present} color="success" />
+                <Stat label="Absent" value={stats.absent} color="danger" />
+                <Stat label="Leave" value={stats.leave} color="warning" />
               </div>
 
-              {/* Quick mark buttons */}
-              <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <p className="text-gray-700 font-medium mb-3">Quick Actions</p>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    onClick={() => handleMarkAll("present")}
-                    className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium transition"
-                  >
-                    <Check className="w-4 h-4 inline mr-2" />
-                    Mark All Present
+              {/* QUICK ACTIONS */}
+              <div className="panel mb-3">
+                <div className="d-flex gap-2">
+                  <button className="btn btn-success" onClick={() => handleMarkAll("present")}>
+                    <Check size={16} /> All Present
                   </button>
-                  <button
-                    onClick={() => handleMarkAll("absent")}
-                    className="bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition"
-                  >
-                    <X className="w-4 h-4 inline mr-2" />
-                    Mark All Absent
+                  <button className="btn btn-danger" onClick={() => handleMarkAll("absent")}>
+                    <X size={16} /> All Absent
                   </button>
-                  <button
-                    onClick={() => handleMarkAll("leave")}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-medium transition"
-                  >
-                    Mark All Leave
+                  <button className="btn btn-warning" onClick={() => handleMarkAll("leave")}>
+                    Leave
                   </button>
                 </div>
               </div>
 
-              {/* Student list */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Students ({students.length})
-                </h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {students.map((student) => (
-                    <div
-                      key={student._id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {student.userId.name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {student.registrationNumber}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAttendanceChange(student._id, "present")}
-                          className={`px-4 py-1 rounded-lg font-medium transition ${
-                            attendance[student._id] === "present"
-                              ? "bg-green-500 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
-                        >
-                          <Check className="w-4 h-4 inline mr-1" />
-                          Present
-                        </button>
-                        <button
-                          onClick={() => handleAttendanceChange(student._id, "absent")}
-                          className={`px-4 py-1 rounded-lg font-medium transition ${
-                            attendance[student._id] === "absent"
-                              ? "bg-red-500 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
-                        >
-                          <X className="w-4 h-4 inline mr-1" />
-                          Absent
-                        </button>
-                        <button
-                          onClick={() => handleAttendanceChange(student._id, "leave")}
-                          className={`px-4 py-1 rounded-lg font-medium transition ${
-                            attendance[student._id] === "leave"
-                              ? "bg-yellow-500 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
-                        >
-                          Leave
-                        </button>
-                      </div>
+              {/* LIST */}
+              <div className="panel">
+                {students.map((s) => (
+                  <div key={s._id} className="student-row">
+                    <div>
+                      <div className="fw-semibold">{s.userId.name}</div>
+                      <small className="text-muted">{s.registrationNumber}</small>
                     </div>
-                  ))}
-                </div>
+                    <div className="btn-group">
+                      {["present", "absent", "leave"].map((st) => (
+                        <button
+                          key={st}
+                          className={`btn btn-sm ${
+                            attendance[s._id] === st
+                              ? st === "present"
+                                ? "btn-success"
+                                : st === "absent"
+                                ? "btn-danger"
+                                : "btn-warning"
+                              : "btn-outline-secondary"
+                          }`}
+                          onClick={() =>
+                            setAttendance((p) => ({ ...p, [s._id]: st }))
+                          }
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
 
-                {/* Submit button */}
                 <button
+                  className="btn btn-primary w-100 mt-3"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition"
                 >
                   {loading ? "Saving..." : "Submit Attendance"}
                 </button>
               </div>
             </>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                Select batch, class, section, and subject to mark attendance
-              </p>
-            </div>
           )}
         </div>
       </div>
+
+      <style>{`
+        .panel {
+          background: #fff;
+          border-radius: 18px;
+          padding: 1.4rem;
+          box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+
+        .panel-title {
+          font-weight: 600;
+          margin-bottom: 1rem;
+          color: #065f46;
+        }
+
+        .student-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid #eee;
+        }
+
+        .student-row:last-child {
+          border-bottom: none;
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+const Stat = ({ label, value, color }) => (
+  <div className="col-md-4">
+    <div className={`panel border-start border-4 border-${color}`}>
+      <small className="text-muted">{label}</small>
+      <h4 className={`text-${color}`}>{value}</h4>
+    </div>
+  </div>
+);
+
+export default AttendanceTaking;
