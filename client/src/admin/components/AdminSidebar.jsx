@@ -1,131 +1,80 @@
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   GraduationCap,
   BookOpen,
-  X
+  Layers,
+  Menu,
+  X,
+  LogOut,
+  Clock,
 } from "lucide-react";
 
-const AdminSidebar = ({ open, onClose }) => {
+export default function AdminSidebar() {
+  const [isOpen, setIsOpen] = useState(true);
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
+
+  const menuItems = [
+    { path: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/admin/register-student", icon: Users, label: "Register Student" },
+    { path: "/admin/register-teacher", icon: GraduationCap, label: "Register Teacher" },
+    { path: "/admin/create-class", icon: BookOpen, label: "Create Class" },
+    { path: "/admin/create-batch", icon: Layers, label: "Create Batch" },
+    { path: "/admin/create-subject", icon: BookOpen, label: "Subjects" },
+    { path: "/admin/teacher-allocation", icon: Users, label: "Teacher Allocation" },
+    { path: "/admin/timetable", icon: Clock, label: "Timetable" },
+  ];
+
   return (
     <>
-      <aside className={`admin-sidebar ${open ? "open" : ""}`}>
-        <div className="sidebar-header">
-          <h4>SBV Admin</h4>
-          <button className="close-btn" onClick={onClose}>
-            <X size={20} />
+      <div
+        className={`${
+          isOpen ? "w-64" : "w-20"
+        } bg-gradient-to-b from-blue-600 to-blue-800 text-white transition-all duration-300 h-screen flex flex-col shadow-lg`}
+      >
+        {/* Logo */}
+        <div className="p-4 flex items-center justify-between">
+          {isOpen && <h1 className="text-2xl font-bold">SBV</h1>}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 hover:bg-blue-700 rounded-lg"
+          >
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="sidebar-nav">
-          <NavLink to="/admin" end onClick={onClose}>
-            <LayoutDashboard size={18} /> Dashboard
-          </NavLink>
-          <NavLink to="/admin/students" onClick={onClose}>
-            <Users size={18} /> Students
-          </NavLink>
-          <NavLink to="/admin/teachers" onClick={onClose}>
-            <GraduationCap size={18} /> Teachers
-          </NavLink>
-          <NavLink to="/admin/attendance" onClick={onClose}>
-            <BookOpen size={18} /> Attendance
-          </NavLink>
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <div className="space-y-2">
+            {menuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                  isActive(item.path)
+                    ? "bg-blue-500 text-white"
+                    : "text-blue-100 hover:bg-blue-700"
+                }`}
+              >
+                <item.icon size={20} />
+                {isOpen && <span className="font-medium">{item.label}</span>}
+              </Link>
+            ))}
+          </div>
         </nav>
-      </aside>
 
-      {open && <div className="overlay" onClick={onClose}></div>}
-
-      <style>{`
-        .admin-sidebar {
-          width: 240px;
-          background: #535434;
-          color: #d7d8b6;
-          padding: 1rem;
-          position: fixed;
-          top: 0;
-          left: 0;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease;
-          z-index: 2000;
-        }
-
-        .admin-sidebar.open {
-          transform: translateX(0);
-        }
-
-        .sidebar-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .sidebar-header h4 {
-          color: #fff;
-          margin: 0;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          color: #fff;
-          display: none;
-        }
-
-        /* NAV DOES NOT SCROLL */
-        .sidebar-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 0.6rem;
-        }
-
-        .admin-sidebar a {
-          display: flex;
-          gap: 10px;
-          padding: 0.6rem 1rem;
-          border-radius: 10px;
-          color: #d7d8b6;
-          text-decoration: none;
-        }
-
-        .admin-sidebar a.active,
-        .admin-sidebar a:hover {
-          background: rgba(255,255,255,0.15);
-          color: #fff;
-        }
-
-        .overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.4);
-          z-index: 1500;
-        }
-
-        /* DESKTOP */
-        @media (min-width: 992px) {
-          .admin-sidebar {
-            transform: translateX(0);
-            position: relative;
-          }
-
-          .overlay {
-            display: none;
-          }
-        }
-
-        /* MOBILE */
-        @media (max-width: 991px) {
-          .close-btn {
-            display: block;
-          }
-        }
-      `}</style>
+        {/* Logout */}
+        <div className="p-4 border-t border-blue-500">
+          <button className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-700 transition">
+            <LogOut size={20} />
+            {isOpen && <span>Logout</span>}
+          </button>
+        </div>
+      </div>
     </>
   );
-};
-
-export default AdminSidebar;
+}
