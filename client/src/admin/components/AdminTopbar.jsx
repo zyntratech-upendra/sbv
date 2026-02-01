@@ -1,57 +1,50 @@
-import { Menu, UserCircle } from "lucide-react";
+import { Bell, User, LogOut, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const AdminTopbar = ({ onMenuClick }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
+export default function AdminTopbar() {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
 
   return (
-    <>
-      <header className="admin-topbar">
-        <button className="menu-btn" onClick={onMenuClick}>
-          <Menu size={22} />
-        </button>
+    <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="px-8 py-4 flex items-center justify-between">
+        <h2 className="text-gray-700 font-semibold">Welcome, {user.name || "Admin"}</h2>
 
-        <h5>Admin Dashboard</h5>
+        <div className="flex items-center gap-6">
+          <button className="text-gray-600 hover:text-gray-800 relative">
+            <Bell size={20} />
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              3
+            </span>
+          </button>
 
-        <div className="admin-user">
-          <UserCircle size={22} />
-          <span>{user?.name || "Admin"}</span>
+          <button className="text-gray-600 hover:text-gray-800">
+            <Settings size={20} />
+          </button>
+
+          <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+              {user.name?.[0] || "A"}
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-sm font-medium text-gray-800">{user.name}</p>
+              <p className="text-xs text-gray-500">{user.role}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50"
+          >
+            <LogOut size={20} />
+          </button>
         </div>
-      </header>
-
-      <style>{`
-        .admin-topbar {
-          background: #fff;
-          padding: 1rem 1.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-        }
-
-        .menu-btn {
-          background: none;
-          border: none;
-          display: none;
-        }
-
-        .admin-user {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          font-weight: 500;
-          color: #535434;
-        }
-
-        @media (max-width: 991px) {
-          .menu-btn {
-            display: block;
-          }
-        }
-
-
-      `}</style>
-    </>
+      </div>
+    </div>
   );
-};
-
-export default AdminTopbar;
+}
